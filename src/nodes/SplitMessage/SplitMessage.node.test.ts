@@ -4,7 +4,6 @@ interface ItemParams {
   text: string;
   maxLength: number;
   strategy?: string;
-  outputField?: string;
 }
 
 /**
@@ -18,7 +17,6 @@ function makeContext(items: Array<{ json: Record<string, unknown> }>, params: It
       const p = params[itemIndex] as unknown as Record<string, unknown>;
       const defaults: Record<string, unknown> = {
         strategy: 'hard-split',
-        outputField: 'parts',
       };
       return p[name] ?? defaults[name];
     },
@@ -30,7 +28,7 @@ function makeContext(items: Array<{ json: Record<string, unknown> }>, params: It
 describe('SplitMessage node - execute', () => {
   const node = new SplitMessage();
 
-  it('outputs parts array and count', async () => {
+  it('fans out one output item per part', async () => {
     const ctx = makeContext(
       [{ json: { id: 1 } }],
       [{ text: 'one two three four', maxLength: 8 }],
@@ -39,41 +37,53 @@ describe('SplitMessage node - execute', () => {
     const result = await node.execute.call(ctx);
     const out = result[0];
 
-    expect(out).toHaveLength(1);
-    expect(Array.isArray(out[0].json.parts)).toBe(true);
-    expect(out[0].json.count).toBe((out[0].json.parts as string[]).length);
-    // Original item data is preserved.
-    expect(out[0].json.id).toBe(1);
-    for (const part of out[0].json.parts as string[]) {
-      expect(part.length).toBeLessThanOrEqual(8);
+    expect(out.length).toBeGreaterThan(1);
+    for (const item of out) {
+      expect(typeof item.json.message).toBe('string');
+      expect((item.json.message as string).length).toBeLessThanOrEqual(8);
+      // No nested array, count, or original item data leaks into the part item.
+      expect(item.json.parts).toBeUndefined();
+      expect(item.json.count).toBeUndefined();
+      expect(item.json.id).toBeUndefined();
+      // Origin is preserved via pairedItem.
+      expect(item.pairedItem).toEqual({ item: 0 });
     }
   });
 
-  it('honors a custom output field name', async () => {
-    const ctx = makeContext(
-      [{ json: {} }],
-      [{ text: 'hello world', maxLength: 50, outputField: 'messages' }],
-    );
+  it('emits a single item when the text fits the limit', async () => {
+    const ctx = makeContext([{ json: {} }], [{ text: 'hello world', maxLength: 50 }]);
 
     const result = await node.execute.call(ctx);
-    expect(result[0][0].json.messages).toEqual(['hello world']);
+    const out = result[0];
+
+    expect(out).toHaveLength(1);
+    expect(out[0].json.message).toBe('hello world');
+    expect(out[0].pairedItem).toEqual({ item: 0 });
   });
 
-  it('processes each input item independently', async () => {
+  it('fans out across multiple input items and emits nothing for empty text', async () => {
     const ctx = makeContext(
-      [{ json: { i: 0 } }, { json: { i: 1 } }],
+      [{ json: { i: 0 } }, { json: { i: 1 } }, { json: { i: 2 } }],
       [
         { text: 'short', maxLength: 50 },
         { text: 'alpha beta gamma', maxLength: 9 },
+        { text: '', maxLength: 50 },
       ],
     );
 
     const result = await node.execute.call(ctx);
     const out = result[0];
 
-    expect(out).toHaveLength(2);
-    expect(out[0].json.parts).toEqual(['short']);
-    expect((out[1].json.parts as string[]).length).toBeGreaterThan(1);
+    // Item 0 -> 1 part, item 1 -> >1 part, item 2 (empty) -> 0 parts.
+    const fromItem0 = out.filter((o) => o.pairedItem && (o.pairedItem as any).item === 0);
+    const fromItem1 = out.filter((o) => o.pairedItem && (o.pairedItem as any).item === 1);
+    const fromItem2 = out.filter((o) => o.pairedItem && (o.pairedItem as any).item === 2);
+
+    expect(fromItem0).toHaveLength(1);
+    expect(fromItem0[0].json.message).toBe('short');
+    expect(fromItem1.length).toBeGreaterThan(1);
+    expect(fromItem2).toHaveLength(0);
+    expect(out).toHaveLength(fromItem0.length + fromItem1.length);
   });
 
   it('throws a NodeOperationError for an invalid maxLength', async () => {

@@ -29,7 +29,6 @@ npm install n8n-nodes-split-message
 | **Texto** | string (aceita expressão) | — | A mensagem longa a ser dividida. |
 | **Limite Máximo** | número | `4096` | Máximo de caracteres por mensagem. |
 | **Estratégia para Palavra Maior que o Limite** | opções | `Dividir a Palavra` | Como tratar uma palavra maior que o limite. |
-| **Nome do Campo de Saída** | string | `parts` | Campo que conterá o array resultante. |
 
 **Estratégia para Palavra Maior que o Limite**
 - **Dividir a Palavra** — uma palavra maior que o limite é fatiada para que nenhuma parte ultrapasse o máximo (ideal para URLs longas).
@@ -37,16 +36,19 @@ npm install n8n-nodes-split-message
 
 ### Saída
 
-Cada item de entrada gera um item de saída com:
+O nó faz **fan-out**: cada item de entrada gera **um item de saída por mensagem dividida**. Cada item de saída tem o texto da parte no campo `message`:
 
 ```json
-{
-  "parts": ["primeiro pedaço ...", "segundo pedaço ...", "..."],
-  "count": 3
-}
+[
+  { "message": "primeiro pedaço ..." },
+  { "message": "segundo pedaço ..." },
+  { "message": "..." }
+]
 ```
 
-Os campos originais do item são preservados. Use o nó **Split Out** ou um loop para iterar sobre `parts`.
+As mensagens já saem separadas — não é preciso um nó **Split Out** nem um loop. A origem de cada parte é mantida via `pairedItem`, então você pode recuperar os dados do item de entrada em nós downstream. Texto vazio não gera itens.
+
+> **Mudança em 0.2.0 (BREAKING):** versões anteriores devolviam um único item por entrada com o array em `parts` e um campo `count`, além de permitir configurar o "Nome do Campo de Saída". Agora a saída é um item por mensagem no campo `message`, sem `count` e sem campo configurável. Workflows que liam `parts`/`count` precisam ser ajustados para iterar sobre os itens.
 
 ### Como a divisão funciona
 

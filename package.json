@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-split-message",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Nó da comunidade n8n que divide uma mensagem longa em um array de mensagens menores respeitando um limite máximo, sem cortar palavras. Desenvolvido por zanini · ninelabs.",
   "keywords": [
     "n8n-community-node-package",

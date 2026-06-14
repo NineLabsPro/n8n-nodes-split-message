@@ -72,13 +72,6 @@ export class SplitMessage implements INodeType {
         default: 'hard-split',
         description: 'Como tratar uma única palavra maior que o limite máximo',
       },
-      {
-        displayName: 'Nome do Campo de Saída',
-        name: 'outputField',
-        type: 'string',
-        default: 'parts',
-        description: 'Nome do campo que conterá o array com as mensagens divididas',
-      },
     ],
   };
 
@@ -91,18 +84,15 @@ export class SplitMessage implements INodeType {
         const text = this.getNodeParameter('text', i) as string;
         const maxLength = this.getNodeParameter('maxLength', i) as number;
         const strategy = this.getNodeParameter('strategy', i) as OversizedWordStrategy;
-        const outputField = (this.getNodeParameter('outputField', i) as string) || 'parts';
 
         const parts = splitMessage(text, maxLength, { strategy });
 
-        returnData.push({
-          json: {
-            ...items[i].json,
-            [outputField]: parts,
-            count: parts.length,
-          },
-          pairedItem: { item: i },
-        });
+        for (const message of parts) {
+          returnData.push({
+            json: { message },
+            pairedItem: { item: i },
+          });
+        }
       } catch (error) {
         if (this.continueOnFail()) {
           returnData.push({
