@@ -1,0 +1,65 @@
+{
+  "name": "n8n-nodes-split-message",
+  "version": "0.1.0",
+  "description": "Nó da comunidade n8n que divide uma mensagem longa em um array de mensagens menores respeitando um limite máximo, sem cortar palavras. Desenvolvido por zanini · ninelabs.",
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "split",
+    "dividir",
+    "mensagem",
+    "message",
+    "chunk",
+    "ninelabs"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/NineLabsPro/n8n-nodes-split-message#readme",
+  "author": {
+    "name": "zanini · ninelabs",
+    "email": "zaniniii@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NineLabsPro/n8n-nodes-split-message.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NineLabsPro/n8n-nodes-split-message/issues"
+  },
+  "engines": {
+    "node": ">=18.10"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc && npm run copy:assets",
+    "copy:assets": "node scripts/copy-assets.js",
+    "dev": "tsc --watch",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "test": "jest",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "nodes": [
+      "dist/nodes/SplitMessage/SplitMessage.node.js"
+    ]
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "n8n-workflow": "^1.0.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.4.0"
+  }
+}
